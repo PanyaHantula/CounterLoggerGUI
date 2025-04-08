@@ -66,11 +66,11 @@ class IR_Count_Worker(QObject):
                     state1 = GPIO.input(GPIOpin_IR1)
                     state2 = GPIO.input(GPIOpin_IR2)
                     
-                print("Metal Detected")
+                # print("Metal Detected")
                 self.totalCount += 1   
                 # print(f"Detected -> Counter : {self.totalCount}")
                 self.IR_Count_ThreadProgress.emit(self.totalCount)       
-            #time.sleep(0.2)
+            time.sleep(0.1)
     
     def reset(self):
         self.totalCount = 0

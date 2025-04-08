@@ -379,6 +379,27 @@
      </rect>
     </property>
    </widget>
+   <widget class="QPushButton" name="btn_exit">
+    <property name="geometry">
+     <rect>
+      <x>1085</x>
+      <y>605</y>
+      <width>126</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>DB Adman X</family>
+      <pointsize>18</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>จบการทำงาน</string>
+    </property>
+   </widget>
   </widget>
  </widget>
  <resources/>

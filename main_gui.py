@@ -132,6 +132,10 @@ class Ui_MainWindow(object):
         self.tb_logger = QTableWidget(self.centralwidget)
         self.tb_logger.setObjectName(u"tb_logger")
         self.tb_logger.setGeometry(QRect(380, 460, 691, 191))
+        self.btn_exit = QPushButton(self.centralwidget)
+        self.btn_exit.setObjectName(u"btn_exit")
+        self.btn_exit.setGeometry(QRect(1085, 605, 126, 41))
+        self.btn_exit.setFont(font7)
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
@@ -158,5 +162,6 @@ class Ui_MainWindow(object):
         self.label_12.setText(QCoreApplication.translate("MainWindow", u"\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e1c\u0e25\u0e34\u0e15", None))
         self.btn_save.setText(QCoreApplication.translate("MainWindow", u"\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01", None))
         self.btn_delete.setText(QCoreApplication.translate("MainWindow", u"\u0e25\u0e1a", None))
+        self.btn_exit.setText(QCoreApplication.translate("MainWindow", u"\u0e08\u0e1a\u0e01\u0e32\u0e23\u0e17\u0e33\u0e07\u0e32\u0e19", None))
     # retranslateUi
 
