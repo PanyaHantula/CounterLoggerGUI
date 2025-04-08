@@ -1,3 +1,6 @@
 pyuic5 -x main_gui.ui -o main_gui.py
 pyside6-uic mainGUI_CounterLogger.ui -o main_gui.py 
 
+#  Email: chokdeesauce@gmail.com
+#  Password : ChokDeeSauce1990
+

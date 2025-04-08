@@ -3,22 +3,23 @@
 ############################################
 import sys
 from PySide6.QtWidgets import QApplication, QMainWindow, QHeaderView, QMessageBox, QTableWidgetItem, \
-                            QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
+                              QGraphicsScene, QGraphicsPixmapItem
 from PySide6.QtCore import Qt, QThread, QObject, Signal, Slot, QTimer
 from PySide6.QtGui import QImage, QPixmap
 import datetime
 import time
 import cv2
+import requests
 
 from main_gui import Ui_MainWindow
 from db import *
 
-# import RPi.GPIO as GPIO
-# import serial
-# import json
+import RPi.GPIO as GPIO
 
-# # Pin of Input
-# GPIOpin = -1
+# Pin of Input
+GPIOpin_IR1 = -1
+GPIOpin_IR2 = -1
+
 
 ###################################
 #        IR_Count_Worker          #
@@ -28,34 +29,48 @@ class IR_Count_Worker(QObject):
     
     def __init__(self):
         super().__init__()
-        # pin = 23
-        # self.initialInductive(pin)
+        IR_1 = 23
+        IR_2 = 24
+        self.initialInductive(IR_1,IR_2)
+        # self.initialInductive(IR_2)
 
-    # # Initial the input pin
-    # def initialInductive(self,pin):
-    #     global GPIOpin 
-    #     GPIOpin = pin
-    #     GPIO.setmode(GPIO.BCM)
-    #     GPIO.setup(GPIOpin,GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-    #     print(f"Finished Initiation : Port {GPIOpin}")
+    # Initial the input pin
+    def initialInductive(self,IR1,IR2):
+        global GPIOpin_IR1 
+        global GPIOpin_IR2
+        
+        GPIOpin_IR1 = IR1
+        GPIOpin_IR2 = IR2
+        
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(GPIOpin_IR1,GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        GPIO.setup(GPIOpin_IR2,GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        # print(f"Finished Initiation : Port {GPIOpin_IR1} and Port {GPIOpin_IR2}")
     
     @Slot()
     def count(self):
         self.totalCount = 0
         while True:
-            # Dummy counter
-            self.totalCount += 1  
-            self.IR_Count_ThreadProgress.emit(self.totalCount)   
-            time.sleep(2)
+            # # Dummy counter
+            # self.totalCount += 1  
+            # self.IR_Count_ThreadProgress.emit(self.totalCount)   
+            # time.sleep(2)
             
-            # if GPIO.input(GPIOpin):
-            #     while GPIO.input(GPIOpin):
-            #         time.sleep(0.2) 
-                
-            #     self.count += 1   
-            #     # print(f"Detected -> Counter : {self.count}")
-            #     self.IR_Count_ThreadProgress.emit(self.count)       
-            # time.sleep(0.2)
+            # Test GPIO Port
+            state1 = GPIO.input(GPIOpin_IR1)
+            state2 = GPIO.input(GPIOpin_IR2)
+            #print(f"GPIO State1: {state1} ,State2: {state2} ")
+            
+            if state1 == 0 or state2 == 0:
+                while state1 == 0 or state2 == 0:
+                    state1 = GPIO.input(GPIOpin_IR1)
+                    state2 = GPIO.input(GPIOpin_IR2)
+                    
+                print("Metal Detected")
+                self.totalCount += 1   
+                # print(f"Detected -> Counter : {self.totalCount}")
+                self.IR_Count_ThreadProgress.emit(self.totalCount)       
+            #time.sleep(0.2)
     
     def reset(self):
         self.totalCount = 0
@@ -114,7 +129,7 @@ class MainWindow(QMainWindow):
         self.ui.gp_camera.setScene(self.scene)
         self.scenePixmapItem = None
         
-        # Initialize worker and thread
+    # Initialize worker and thread
     def setThread(self):
         # IR Counter
         self.IR_Count_thread = QThread()
@@ -136,7 +151,6 @@ class MainWindow(QMainWindow):
     ####### Process frame camera
     def processFrame(self, frame):
         # Convert the frame to a format that Qt can use
-        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         image = QImage(
             frame.data,
             frame.shape[1],
@@ -173,8 +187,7 @@ class MainWindow(QMainWindow):
             Performance = 0
         self.ui.lbl_capacity.setText("{:.2f}".format(Performance)) 
            
-    # Record data to data base
-    # Include meassage box before accept    
+    # Record data to data base 
     def recordDB(self):
         startTime = self.ui.lbl_StartTime.text()
         CountTotal = self.ui.lbl_counter.text()
@@ -191,7 +204,12 @@ class MainWindow(QMainWindow):
             self.db.recordDB(val)
             self.loadDatabase()
             self.resetData()
-
+            
+            # Upload to google sheet
+            url = 'https://script.google.com/macros/s/AKfycbxGkiEN9ZShcJoMqW-IOJKxcDx41E_6MyvSluE8TibDH1_SURXXRmKINAAKk_OyfHES/exec?'\
+                  'timestart=' + startTime + '&total=' + CountTotal + '&capacity=' + capacity
+            response = requests.get(url)
+            print(response)
                 
     # Load data form DB and update to table view        
     def loadDatabase(self):
@@ -241,6 +259,7 @@ class MainWindow(QMainWindow):
             self.loadDatabase()
         
         # reset value in thread 
+    
     def resetData(self):
         self.ui.lbl_counter.setText("0")
         self.ui.lbl_capacity.setText("0")  
