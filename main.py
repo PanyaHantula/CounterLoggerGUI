@@ -124,6 +124,7 @@ class MainWindow(QMainWindow):
         # set button
         self.ui.btn_save.clicked.connect(self.recordDB)
         self.ui.btn_delete.clicked.connect(self.deleteRecord)
+        self.ui.btn_exit.clicked.connect(self.exit)
 
         self.scene = QGraphicsScene()
         self.ui.gp_camera.setScene(self.scene)
@@ -279,7 +280,10 @@ class MainWindow(QMainWindow):
         
         dateNow = datetime.datetime.now().strftime("%Y-%m-%d")
         self.ui.lbl_date.setText(dateNow)
-            
+    
+    def exit(self):
+        self.close()
+                   
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()

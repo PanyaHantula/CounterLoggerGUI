@@ -12,10 +12,15 @@ class Database:
     def connect_db(self):
         try:
             self.db = mysql.connector.connect(
-                host="localhost",
-                user="root",
-                password="p@ssw0rd",
-                database="counterlogger"
+                 host="localhost",
+                user="admin",
+                password="1234",
+                database="datalogger"
+                
+                # host="localhost",
+                # user="root",
+                # password="p@ssw0rd",
+                # database="counterlogger"
                 )    
             self.cursor = self.db.cursor()
             # print("#: Connect SQL Database complete")
@@ -43,7 +48,7 @@ class Database:
         totalRecord = returnDB[0][0]
         
         # Get All customer data
-        self.cursor.execute("SELECT * FROM logger ORDER BY time DESC")
+        self.cursor.execute("SELECT * FROM logger ORDER BY id DESC")
         RecordDetail = self.cursor.fetchall()
         column = 5
         
@@ -59,32 +64,4 @@ if __name__ == "__main__":
     db = Database()
     db.connect_db()
     db.select_all()
-    # cmd = "SELECT * FROM dataLoger WHERE total_product = 9"
-    # resultes = db.query(cmd)
-    # for row in resultes:
-    #     print (row)   
-        
-        
-        
-# import sys,sqlite3
-# import mysql.connector
-
-# try:
-#     db = mysql.connector.connect(
-#         host="localhost",
-#         user="root",
-#         password="raspberry",
-#         database="meekorat5dow"
-#         )    
-
-#     # Create a Cursor object to execute queries.
-#     cur = db.cursor()
-    
-#     # Select data from table using SQL query.
-#     cur.execute("SELECT * FROM dataLoger")
-    
-#     # print the first and second columns      
-#     for row in cur.fetchall():
-#         print (row)
-# except:
-#     print("Error connecting Database")       
+         
