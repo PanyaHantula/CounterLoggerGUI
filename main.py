@@ -2,6 +2,7 @@
 #           Pyside 6 + Qt Designer         #
 ############################################
 import sys
+import os
 from PySide6.QtWidgets import QApplication, QMainWindow, QHeaderView, QMessageBox, QTableWidgetItem, \
                               QGraphicsScene, QGraphicsPixmapItem
 from PySide6.QtCore import Qt, QThread, QObject, Signal, Slot, QTimer
@@ -14,66 +15,87 @@ import requests
 from main_gui import Ui_MainWindow
 from db import *
 
-import RPi.GPIO as GPIO
+#######################################
+# IR_Count_Worker for macOS testing   #
+#######################################
 
-# Pin of Input
-GPIOpin_IR1 = -1
-GPIOpin_IR2 = -1
-
-
-###################################
-#        IR_Count_Worker          #
-###################################
 class IR_Count_Worker(QObject):
     IR_Count_ThreadProgress = Signal(int)
     
     def __init__(self):
         super().__init__()
-        IR_1 = 23
-        IR_2 = 24
-        self.initialInductive(IR_1,IR_2)
-        # self.initialInductive(IR_2)
-
-    # Initial the input pin
-    def initialInductive(self,IR1,IR2):
-        global GPIOpin_IR1 
-        global GPIOpin_IR2
-        
-        GPIOpin_IR1 = IR1
-        GPIOpin_IR2 = IR2
-        
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(GPIOpin_IR1,GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-        GPIO.setup(GPIOpin_IR2,GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-        # print(f"Finished Initiation : Port {GPIOpin_IR1} and Port {GPIOpin_IR2}")
     
     @Slot()
     def count(self):
         self.totalCount = 0
         while True:
-            # # Dummy counter
-            # self.totalCount += 1  
-            # self.IR_Count_ThreadProgress.emit(self.totalCount)   
-            # time.sleep(2)
-            
-            # Test GPIO Port
-            state1 = GPIO.input(GPIOpin_IR1)
-            state2 = GPIO.input(GPIOpin_IR2)
-            #print(f"GPIO State1: {state1} ,State2: {state2} ")
-            
-            if state1 == 0 or state2 == 0:
-                while state1 == 0 or state2 == 0:
-                    state1 = GPIO.input(GPIOpin_IR1)
-                    state2 = GPIO.input(GPIOpin_IR2)
-                    
-                # print("Metal Detected")
-                self.totalCount += 1   
-                # print(f"Detected -> Counter : {self.totalCount}")
-                self.IR_Count_ThreadProgress.emit(self.totalCount)       
-            time.sleep(0.1)
-    
+            # Dummy counter
+            self.totalCount += 1  
+            self.IR_Count_ThreadProgress.emit(self.totalCount)   
+            time.sleep(2)
+
     def reset(self):
         self.totalCount = 0
+
+# ###################################
+# #  IR_Count_Worker  for rasp pi   #
+# ###################################
+# import RPi.GPIO as GPIO
+
+# # Pin of Input
+# GPIOpin_IR1 = -1
+# GPIOpin_IR2 = -1
+
+# class IR_Count_Worker(QObject):
+#     IR_Count_ThreadProgress = Signal(int)
+    
+#     def __init__(self):
+#         super().__init__()
+#         IR_1 = 23
+#         IR_2 = 24
+#         self.initialInductive(IR_1,IR_2)
+#         # self.initialInductive(IR_2)
+
+#     # Initial the input pin
+#     def initialInductive(self,IR1,IR2):
+#         global GPIOpin_IR1 
+#         global GPIOpin_IR2
+        
+#         GPIOpin_IR1 = IR1
+#         GPIOpin_IR2 = IR2
+        
+#         GPIO.setmode(GPIO.BCM)
+#         GPIO.setup(GPIOpin_IR1,GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+#         GPIO.setup(GPIOpin_IR2,GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+#         # print(f"Finished Initiation : Port {GPIOpin_IR1} and Port {GPIOpin_IR2}")
+    
+#     @Slot()
+#     def count(self):
+#         self.totalCount = 0
+#         while True:
+#             # # Dummy counter
+#             # self.totalCount += 1  
+#             # self.IR_Count_ThreadProgress.emit(self.totalCount)   
+#             # time.sleep(2)
+            
+#             # Test GPIO Port
+#             state1 = GPIO.input(GPIOpin_IR1)
+#             state2 = GPIO.input(GPIOpin_IR2)
+#             #print(f"GPIO State1: {state1} ,State2: {state2} ")
+            
+#             if state1 == 0 or state2 == 0:
+#                 while state1 == 0 or state2 == 0:
+#                     state1 = GPIO.input(GPIOpin_IR1)
+#                     state2 = GPIO.input(GPIOpin_IR2)
+                    
+#                 # print("Metal Detected")
+#                 self.totalCount += 1   
+#                 # print(f"Detected -> Counter : {self.totalCount}")
+#                 self.IR_Count_ThreadProgress.emit(self.totalCount)       
+#             time.sleep(0.1)
+    
+#     def reset(self):
+#         self.totalCount = 0
 
 ###################################
 #          CameraWorker           #
@@ -81,28 +103,85 @@ class IR_Count_Worker(QObject):
 class CameraWorker(QObject):
     frameCaptured = Signal(object)  # Emit frame data
 
-    def __init__(self, camera_index=0):
+    def __init__(self, main_window):
         super().__init__()
-        self.camera_index = camera_index
+        self.main_window = main_window
+        self.camera_index = 0
         self.running = False
 
     def run(self):
         self.running = True
         cap = cv2.VideoCapture(self.camera_index)
-        # cap.set(cv2.CV_CAP_PROP_FRAME_WIDTH, 800)
-        # cap.set(cv2.CV_CAP_PROP_FRAME_HEIGHT, 600)
-        while self.running:
-            ret, frame = cap.read()
-            if ret:
-                self.frameCaptured.emit(frame)
-                time.sleep(0.033)  # Limit to ~30 FPS
-            else:
-                break
-        cap.release()
+        # ตั้งค่าการบันทึกวิดีโอ
+        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps = 20  # เฟรมต่อวินาที
+        record_seconds =  10              # 5 * 60  # 5 นาที = 300 วินาที
+        num_files = 10
 
+        # โฟลเดอร์เก็บไฟล์
+        output_folder = "videos"
+        os.makedirs(output_folder, exist_ok=True)
+
+        file_index = 0  # เริ่มที่ไฟล์แรก
+
+        try:
+            while self.running:
+                filename = os.path.join(output_folder, f"video_{file_index}.mp4")
+                fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # ใช้ codec mp4
+                out = cv2.VideoWriter(filename, fourcc, fps, (frame_width, frame_height))
+
+                print(f"กำลังบันทึก: {filename}")
+                start_time = time.time()
+                
+                while time.time() - start_time < record_seconds:
+                    ret, frame = cap.read()
+                    if not ret:
+                        print("ไม่สามารถอ่านภาพจากกล้องได้")
+                        break
+                    
+                    # วาดเวลาปัจจุบัน
+                    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    cv2.putText(frame, current_time, (10, frame_height - 20),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+                    # แสดง capacity
+                    Capacity = self.main_window.ui.lbl_capacity.text()
+                    cv2.putText(frame, f"Capacity: {Capacity}", (10, frame_height - 60),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                    
+                    # แสดง Counter
+                    CountTotal = self.main_window.ui.lbl_counter.text()
+                    cv2.putText(frame, f"Total: {CountTotal}", (10, frame_height - 100),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)               
+                    
+                    out.write(frame)
+                    #cv2.imshow('Recording...', frame)
+                    self.frameCaptured.emit(frame)
+                
+                out.release()
+                
+                # เปลี่ยนไฟล์ถัดไป (วนกลับไปที่ไฟล์แรกเมื่อครบ 10 ไฟล์)
+                file_index = (file_index + 1) % num_files
+                
+        except KeyboardInterrupt:
+            print("หยุดการบันทึก")
+
+        finally:
+            cap.release()
+            cv2.destroyAllWindows()
+    
+    def add_overlay(self, frame):
+        # เพิ่มเวลาปัจจุบัน
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cv2.putText(frame, current_time, (10, self.frame_height - 20),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+        return frame
+                        
     def stop(self):
         self.running = False
 
+    
 ###################################
 #           MainWindow            #
 ###################################                
@@ -111,6 +190,8 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        # self.showMaximized()
+        self.setWindowTitle("Counter Logger")
         
         # connect to DB
         self.db = Database()
@@ -143,7 +224,7 @@ class MainWindow(QMainWindow):
         
         # camera thread
         self.thread = QThread()
-        self.cameraWorker = CameraWorker()
+        self.cameraWorker = CameraWorker(self)
         self.cameraWorker.moveToThread(self.thread)
         self.cameraWorker.frameCaptured.connect(self.processFrame)
         self.thread.started.connect(self.cameraWorker.run)

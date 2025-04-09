@@ -12,15 +12,15 @@ class Database:
     def connect_db(self):
         try:
             self.db = mysql.connector.connect(
-                 host="localhost",
-                user="admin",
-                password="1234",
-                database="datalogger"
+                #  host="localhost",
+                # user="admin",
+                # password="1234",
+                # database="datalogger"
                 
-                # host="localhost",
-                # user="root",
-                # password="p@ssw0rd",
-                # database="counterlogger"
+                host="localhost",
+                user="root",
+                password="p@ssw0rd",
+                database="counterlogger"
                 )    
             self.cursor = self.db.cursor()
             # print("#: Connect SQL Database complete")
